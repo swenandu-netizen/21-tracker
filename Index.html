@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>21-दिन हैबिट ट्रैकर</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --text-muted: #4a5568;
+            --border-color: #edf2f7;
+            --primary-color: #667eea;
+            --primary-gradient: linear-gradient(135deg, #667eea, #764ba2);
+            --nav-bg: #ffffff;
+            --input-bg: #ffffff;
+            --input-border: #cbd5e0;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a202c;
+            --card-bg: #2d3748;
+            --text-color: #f7fafc;
+            --text-muted: #cbd5e0;
+            --border-color: #4a5568;
+            --nav-bg: #2d3748;
+            --input-bg: #1a202c;
+            --input-border: #4a5568;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding-bottom: 70px;
+        }
+
+        /* पिन लॉक स्क्रीन स्टाइल */
+        #pinScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .pin-box {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 320px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+        }
+        .pin-box h2 {
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+        .pin-box p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+        .pin-input {
+            width: 100%;
+            padding: 14px;
+            font-size: 22px;
+            text-align: center;
+            letter-spacing: 8px;
+            border: 2px solid var(--input-border);
+            border-radius: 10px;
+            background: var(--input-bg);
+            color: var(--text-color);
+            outline: none;
+            margin-bottom: 15px;
+        }
+        .pin-btn {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .header-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .theme-toggle, .color-picker-btn, .reminder-btn, .library-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 10px;
+        }
+        .page {
+            display: none;
+        }
+        .active-page {
+            display: block;
+        }
+
+        .quote-banner {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .quote-banner h4 {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+            margin-bottom: 4px;
+        }
+        .quote-banner p {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .badges-box {
+            background: var(--card-bg);
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            text-align: center;
+        }
+        .badge-item {
+            opacity: 0.3;
+            filter: grayscale(100%);
+            transition: all 0.3s;
+        }
+        .badge-item.unlocked {
+            opacity: 1;
+            filter: grayscale(0%);
+            transform: scale(1.1);
+        }
+        .badge-icon {
+            font-size: 24px;
+            margin-bottom: 2px;
+        }
+        .badge-title {
+            font-size: 10px;
+            font-weight: bold;
+            color: var(--text-muted);
+        }
+
+        .dashboard-box {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .stat-card {
+            flex: 1;
+            background: var(--card-bg);
+            padding: 8px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            border: 1px solid var(--border-color);
+        }
+        .stat-card h4 {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .stat-card span {
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .analytics-box {
+            background: var(--card-bg);
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            border: 1px solid var(--border-color);
+        }
+        .analytics-box h4 {
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+        .graph-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 50px;
+            padding-top: 10px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .graph-bar-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .graph-bar {
+            width: 12px;
+            background: var(--primary-color);
+            border-radius: 4px 4px 0 0;
+            transition: height 0.5s;
+        }
+        .graph-label {
+            font-size: 9px;
+            color: var(--text-muted);
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border-left: 5px solid var(--primary-color);
+            position: relative;
+        }
+        .card.pinned {
+            border-left-color: #d69e2e;
+            background: rgba(214, 158, 46, 0.03);
+        }
+        .category-tag {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: bold;
+            background: #ebf8ff;
+            color: #3182ce;
+            padding: 2px 8px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+        }
+        .card h3 {
+            color: var(--text-color);
+            font-size: 16px;
+            margin-bottom: 4px;
+            padding-right: 70px;
+            word-break: break-word;
+        }
+        .card p {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+        .journal-box {
+            background: var(--bg-color);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            background: var(--border-color);
+            height: 6px;
+            border-radius: 3px;
+            margin: 8px 0;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--primary-gradient);
+            border-radius: 3px;
+            transition: width 0.4s ease;
+        }
+
+        .card-bottom-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            padding-top: 8px;
+            margin-top: 5px;
+        }
+        .progress-badge {
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--text-muted);
+            background: var(--border-color);
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+        .start-date {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        .action-btn-group {
+            display: flex;
+            gap: 6px;
+        }
+        .check-btn {
+            background-color: #48bb78;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .check-btn.checked {
+            background-color: #a0aec0;
+            cursor: not-allowed;
+        }
+        .share-btn {
+            background-color: #25d366;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .card-top-icons {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            display: flex;
+            gap: 5px;
+        }
+        .icon-btn {
+            background: var(--border-color);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+        }
+        .icon-btn.pin.pinned {
+            background: #feebc8;
+            border-color: #fbd38d;
+        }
+        .icon-btn.delete {
+            background: #fff5f5;
+            border-color: #fed7d7;
+        }
+
+        .form-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-top: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            background: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+        }
+        textarea {
+            resize: vertical;
+            height: 90px;
+        }
+        .submit-btn {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--nav-bg);
+            display: flex;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            cursor: pointer;
+            color: #a0aec0;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .nav-item.active {
+            color: var(--primary-color);
+        }
+        .nav-item svg {
+            display: block;
+            margin: 0 auto 3px auto;
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+        .empty-msg {
+            text-align: center;
+            color: var(--text-muted);
+            margin-top: 40px;
+            font-size: 15px;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.show {
+            visibility: visible;
+            opacity: 1;
+        }
+        .modal-box {
+            background: var(--card-bg);
+            color: var(--text-color);
+            width: 85%;
+            max-width: 340px;
+            padding: 25px 20px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.show .modal-box {
+            transform: scale(1);
+        }
+        .modal-box h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .modal-box p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .modal-btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .modal-btn {
+            flex: 1;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .modal-btn.cancel {
+            background: var(--border-color);
+            color: var(--text-color);
+        }
+        .library-item {
+            background: var(--bg-color);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            text-align: left;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+        }
+        .library-item:hover {
+            border-color: var(--primary-color);
+        }
+    </style>
+</head>
+<body data-theme="light">
+
+    <!-- पिन लॉक स्क्रीन (शुरुआत में दिखेगी) -->
+    <div id="pinScreen">
+        <div class="pin-box">
+            <h2>🔒 ऐप लॉक है</h2>
+            <p>कृपया 4-अंकों का पिन दर्ज करें (डिफ़ॉल्ट: 1234)</p>
+            <input type="password" id="pinInput" class="pin-input" maxlength="4" placeholder="••••">
+            <button class="pin-btn" onclick="verifyPin()">अनलॉक करें</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1 id="headerTitle">🎯 मेरे हैबिट्स</h1>
+        <div class="header-actions">
+            <button class="library-btn" onclick="openLibraryModal()" title="रेडीमेड लाइब्रेरी">✨ कोट्स</button>
+            <button class="reminder-btn" onclick="requestNotificationPermission()" title="रिमाइंडर">⏰</button>
+            <select id="themeColorSelect" class="color-picker-btn" onchange="changeThemeColor(this.value)">
+                <option value="#667eea">🎨 पर्पल</option>
+                <option value="#3182ce">🔵 ब्लू</option>
+                <option value="#38a169">🟢 ग्रीन</option>
+                <option value="#d69e2e">🟠 ओरेंज</option>
+                <option value="#e53e3e">🔴 रेड</option>
+            </select>
+            <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- पेज 1: डिस्प्ले पेज -->
+        <div id="page1" class="page active-page">
+            
+            <div class="quote-banner">
+                <h4>🌟 आज का विचार</h4>
+                <p id="dailyQuoteText">"विश्वास वह शक्ति है जिससे उजड़ती हुई दुनिया में भी प्रकाश किया जा सकता है।"</p>
+            </div>
+
+            <div class="badges-box">
+                <div class="badge-item" id="badgeStart" title="पहला कदम (1 चेक-इन)">
+                    <div class="badge-icon">🌱</div>
+                    <div class="badge-title">शुरुआत</div>
+                </div>
+                <div class="badge-item" id="badgeStreak5" title="5 दिन की स्ट्रीक">
+                    <div class="badge-icon">🔥</div>
+                    <div class="badge-title">5 स्ट्रीक</div>
+                </div>
+                <div class="badge-item" id="badgePro" title="10 चेक-इन पूरे">
+                    <div class="badge-icon">⭐</div>
+                    <div class="badge-title">प्रो यूजर</div>
+                </div>
+                <div class="badge-item" id="badgeMaster" title="एक चैलेंज 21 दिन पूरा">
+                    <div class="badge-icon">🏆</div>
+                    <div class="badge-title">चैंपियन</div>
+                </div>
+            </div>
+
+            <div class="dashboard-box">
+                <div class="stat-card">
+                    <h4>कुल</h4>
+                    <span id="totalCount">0</span>
+                </div>
+                <div class="stat-card">
+                    <h4>एक्टिव</h4>
+                    <span id="activeCount">0</span>
+                </div>
+                <div class="stat-card">
+                    <h4>स्ट्रीक</h4>
+                    <span id="streakCount">0 दिन 🔥</span>
+                </div>
+                <div class="stat-card">
+                    <h4>पूरे</h4>
+                    <span id="completedCount">0</span>
+                </div>
+            </div>
+
+            <div class="analytics-box">
+                <h4>📊 साप्ताहिक निरंतरता (Consistency Graph)</h4>
+                <div class="graph-container" id="weeklyGraph"></div>
+            </div>
+
+            <input type="text" class="search-bar" id="searchInput" placeholder="🔍 एफरमेशन खोजें..." oninput="loadNotes()">
+
+            <div id="notesList">लोड हो रहा है...</div>
+        </div>
+
+        <!-- पेज 2: ऐड या एडिट फॉर्म -->
+        <div id="page2" class="page">
+            <div class="form-container">
+                <h3 id="formHeading" style="margin-bottom: 15px; color: var(--text-color);">✨ नया चैलेंज या नोट जोड़ें</h3>
+                <input type="hidden" id="editIndex" value="">
+                
+                <div class="form-group">
+                    <label>कैटेगरी (Category)</label>
+                    <select id="noteCategory">
+                        <option value="धन & करियर (Wealth)">💰 धन & करियर (Wealth)</option>
+                        <option value="स्वास्थ्य (Health)">🍏 स्वास्थ्य (Health)</option>
+                        <option value="रिश्ते (Relationships)">❤️ रिश्ते (Relationships)</option>
+                        <option value="माइंडसेट (Mindset)">🧠 माइंडसेट (Mindset)</option>
+                        <option value="अन्य (Other)">✨ अन्य (Other)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>शीर्षक (Title)</label>
+                    <input type="text" id="noteTitle" placeholder="जैसे: मैं लखपति यूट्यूबर हूँ">
+                </div>
+                <div class="form-group">
+                    <label>विवरण (Description)</label>
+                    <textarea id="noteDesc" placeholder="अपने संकल्प के बारे में कुछ और लिखें..."></textarea>
+                </div>
+                <button class="submit-btn" id="saveBtn" onclick="saveOrUpdateNote()">चैलेंज सेव करें</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- बॉटम नेविगेशन -->
+    <div class="bottom-nav">
+        <div class="nav-item active" id="nav1" onclick="switchPage('page1', '🎯 मेरे हैबिट्स')">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            होम (देखें)
+        </div>
+        <div class="nav-item" id="nav2" onclick="openAddPage()">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            नया जोड़ें
+        </div>
+    </div>
+
+    <!-- कस्टम पॉपअप -->
+    <div id="customModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="modalTitle">सूचना</h3>
+            <p id="modalMessage">संदेश यहाँ आएगा</p>
+            <div id="modalExtraInput"></div>
+            <div id="modalBtnContainer" style="margin-top: 15px;">
+                <button class="modal-btn" onclick="closeModal()">ठीक है (OK)</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyAQfYzzByb8o7uWz0O26scQomdXsnfDr5so-jWxWUTU4owAsqV2cbKbTbRaDNrskZf/exec";
+
+    // पिन वेरीफाई करने का फंक्शन (डिफ़ॉल्ट पिन: 1234)
+    const CORRECT_PIN = "1123";
+
+    function verifyPin() {
+        let enteredPin = document.getElementById('pinInput').value;
+        if(enteredPin === CORRECT_PIN) {
+            document.getElementById('pinScreen').style.display = 'none';
+        } else {
+            alert("गलत पिन! कृपया सही पिन दर्ज करें (1234)।");
+            document.getElementById('pinInput').value = "";
+        }
+    }
+
+    const dailyQuotes = [
+        "\"विश्वास वह शक्ति है जिससे उजड़ती हुई दुनिया में भी प्रकाश किया जा सकता है।\"",
+        "\"जो अपने कदमों की काबिलियत पर विश्वास रखते हैं, वही अक्सर मंजिल तक पहुँचते हैं।\"",
+        "\"हर दिन एक नई शुरुआत है, इसे अपनी सकारात्मक ऊर्जा से भर दें।\"",
+        "\"आप तब तक नहीं हारते, जब तक आप कोशिश करना बंद नहीं करते।\"",
+        "\"सफलता कोई इत्तेफाक नहीं है, यह लगातार मेहनत और सही आदतों का नतीजा है।\""
+    ];
+
+    function setDailyQuote() {
+        let url = SCRIPT_URL + "?action=quotes";
+        fetch(url)
+        .then(response => response.json())
+        .then(quotesData => {
+            if(quotesData && quotesData.length > 0) {
+                let dayIndex = new Date().getDate() % quotesData.length;
+                document.getElementById('dailyQuoteText').innerText = `"${quotesData[dayIndex]}"`;
+            } else {
+                document.getElementById('dailyQuoteText').innerText = "\"विश्वास वह शक्ति है जिससे उजड़ती हुई दुनिया में भी प्रकाश किया जा सकता है।\"";
+            }
+        })
+        .catch(err => console.log("Quotes Fetch Error: ", err));
+    }
+
+    function updateBadges(totalStreak, totalCompleted, totalCheckins) {
+        if(totalCheckins >= 1) document.getElementById('badgeStart').classList.add('unlocked');
+        if(totalStreak >= 5) document.getElementById('badgeStreak5').classList.add('unlocked');
+        if(totalCheckins >= 10) document.getElementById('badgePro').classList.add('unlocked');
+        if(totalCompleted >= 1) document.getElementById('badgeMaster').classList.add('unlocked');
+    }
+
+    function playSuccessSound() {
+        try {
+            let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.6);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.6);
+        } catch(e) {}
+    }
+
+    function openLibraryModal() {
+        showModal("✨ लोकप्रिय एफरमेशन लाइब्रेरी", "लोड हो रहा है...", false, null, "<div style='color: var(--text-muted);'>इंटरनेट से कोट्स लाये जा रहे हैं...</div>");
+
+        let url = SCRIPT_URL + "?action=library";
+        fetch(url)
+        .then(response => response.json())
+        .then(libData => {
+            if(libData && libData.length > 0) {
+                let htmlContent = `<div style="max-height: 250px; overflow-y: auto; text-align: left;">`;
+                libData.forEach((item, i) => {
+                    let safeTitle = item.title.replace(/'/g, "\\'");
+                    let safeDesc = (item.desc || "").replace(/'/g, "\\'");
+                    let safeCat = item.cat;
+
+                    htmlContent += `
+                        <div class="library-item" onclick="selectLibraryItem('${safeCat}', '${safeTitle}', '${safeDesc}')">
+                            <strong>📌 ${item.title}</strong>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">📂 ${item.cat}</div>
+                        </div>
+                    `;
+                });
+                htmlContent += `</div>`;
+                showModal("✨ एफरमेशन लाइब्रेरी", "अपनी पसंद का संकल्प चुनें:", false, null, htmlContent);
+            } else {
+                showModal("सूचना ℹ️", "Google Sheet के 'Library' टैब में कोई डेटा नहीं मिला!");
+            }
+        })
+        .catch(err => {
+            showModal("त्रुटि ⚠️", "लाइब्रेरी लोड करने में समस्या आई।");
+        });
+    }
+
+    function selectLibraryItem(cat, title, desc) {
+        document.getElementById('noteCategory').value = cat;
+        document.getElementById('noteTitle').value = title;
+        document.getElementById('noteDesc').value = desc;
+        closeModal();
+        switchPage('page2', '➕ नया जोड़ें');
+    }
+
+    function requestNotificationPermission() {
+        if (!("Notification" in window)) return;
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                showModal("सफलता! ⏰", "डेली रिमाइंडर चालू हो गया है!");
+                localStorage.setItem('reminderEnabled', 'true');
+            }
+        });
+    }
+
+    function checkDailyReminder() {
+        if(localStorage.getItem('reminderEnabled') === 'granted' || Notification.permission === "granted") {
+            let lastNotified = localStorage.getItem('lastNotifiedDate');
+            let today = getTodayDate();
+            if(lastNotified !== today) {
+                new Notification("🎯 21-दिन हैबिट ट्रैकर", { body: "आज का एफरमेशन चेक-इन करना न भूलें!" });
+                localStorage.setItem('lastNotifiedDate', today);
+            }
+        }
+    }
+
+    function changeThemeColor(color) {
+        document.documentElement.style.setProperty('--primary-color', color);
+        document.documentElement.style.setProperty('--primary-gradient', `linear-gradient(135deg, ${color}, #2d3748)`);
+        localStorage.setItem('accentColor', color);
+    }
+
+    let savedColor = localStorage.getItem('accentColor');
+    if(savedColor) {
+        changeThemeColor(savedColor);
+        document.getElementById('themeColorSelect').value = savedColor;
+    }
+
+    function toggleTheme() {
+        let body = document.body;
+        let btn = document.querySelector('.theme-toggle');
+        if(body.getAttribute('data-theme') === 'light') {
+            body.setAttribute('data-theme', 'dark');
+            btn.innerText = '☀️';
+            localStorage.setItem('theme', 'dark');
+        } else {
+            body.setAttribute('data-theme', 'light');
+            btn.innerText = '🌙';
+            localStorage.setItem('theme', 'light');
+        }
+    }
+
+    if(localStorage.getItem('theme') === 'dark') {
+        document.body.setAttribute('data-theme', 'dark');
+        document.querySelector('.theme-toggle').innerText = '☀️';
+    }
+
+    function sendDataToSheet(dataObj) {
+        if(SCRIPT_URL === "") return;
+        let url = SCRIPT_URL + "?";
+        let params = [];
+        for (let key in dataObj) {
+            params.push(encodeURIComponent(key) + "=" + encodeURIComponent(dataObj[key]));
+        }
+        url += params.join("&");
+        fetch(url, { method: 'GET', mode: 'no-cors' }).catch(err => console.log("Sheet Error: ", err));
+    }
+
+    function fetchNotesFromSheet() {
+        if(SCRIPT_URL === "") {
+            loadNotes();
+            return;
+        }
+
+        fetch(SCRIPT_URL + "?action=get")
+        .then(response => response.json())
+        .then(sheetData => {
+            if(sheetData && sheetData.length > 0) {
+                let localNotes = JSON.parse(localStorage.getItem('myNotes')) || [];
+                sheetData.forEach(sheetItem => {
+                    let localMatch = localNotes.find(l => l.id == sheetItem.id);
+                    if (localMatch) {
+                        sheetItem.currentDay = localMatch.currentDay;
+                        sheetItem.lastCheckedDate = localMatch.lastCheckedDate;
+                        sheetItem.journal = localMatch.journal;
+                        sheetItem.pinned = localMatch.pinned || false;
+                    }
+                });
+                localStorage.setItem('myNotes', JSON.stringify(sheetData));
+            }
+            loadNotes();
+        })
+        .catch(err => loadNotes());
+    }
+
+    function showModal(title, message, isConfirm = false, onConfirm = null, extraHtml = "") {
+        document.getElementById('modalTitle').innerText = title;
+        document.getElementById('modalMessage').innerText = message;
+        document.getElementById('modalExtraInput').innerHTML = extraHtml;
+        
+        let btnContainer = document.getElementById('modalBtnContainer');
+        if(isConfirm) {
+            btnContainer.innerHTML = `
+                <div class="modal-btn-group">
+                    <button class="modal-btn cancel" onclick="closeModal()">रद्द करें</button>
+                    <button class="modal-btn" id="confirmYesBtn" style="background: #e53e3e;">हाँ, डिलीट करें</button>
+                </div>
+            `;
+            document.getElementById('confirmYesBtn').onclick = function() {
+                closeModal();
+                if(onConfirm) onConfirm();
+            };
+        } else {
+            btnContainer.innerHTML = `<button class="modal-btn" onclick="closeModal()">ठीक है (OK)</button>`;
+        }
+
+        document.getElementById('customModal').classList.add('show');
+    }
+
+    function closeModal() {
+        document.getElementById('customModal').classList.remove('show');
+    }
+
+    function switchPage(pageId, titleText) {
+        document.getElementById('page1').classList.remove('active-page');
+        document.getElementById('page2').classList.remove('active-page');
+        document.getElementById('nav1').classList.remove('active');
+        document.getElementById('nav2').classList.remove('active');
+
+        document.getElementById(pageId).classList.add('active-page');
+        document.getElementById('headerTitle').innerText = titleText;
+
+        if(pageId === 'page1') {
+            document.getElementById('nav1').classList.add('active');
+            loadNotes();
+        } else {
+            document.getElementById('nav2').classList.add('active');
+        }
+    }
+
+    function openAddPage() {
+        document.getElementById('editIndex').value = "";
+        document.getElementById('noteTitle').value = "";
+        document.getElementById('noteDesc').value = "";
+        document.getElementById('noteCategory').value = "धन & करियर (Wealth)";
+        document.getElementById('formHeading').innerText = "✨ नया चैलेंज या नोट जोड़ें";
+        document.getElementById('saveBtn').innerText = "चैलेंज सेव करें";
+        switchPage('page2', '➕ नया जोड़ें');
+    }
+
+    function getTodayDate() {
+        let d = new Date();
+        let year = d.getFullYear();
+        let month = String(d.getMonth() + 1).padStart(2, '0');
+        let day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function saveOrUpdateNote() {
+        let category = document.getElementById('noteCategory').value;
+        let title = document.getElementById('noteTitle').value.trim();
+        let desc = document.getElementById('noteDesc').value.trim();
+        let editIndex = document.getElementById('editIndex').value;
+
+        if(!title) {
+            showModal('त्रुटि ⚠️', 'कृपया शीर्षक भरें!');
+            return;
+        }
+
+        let notes = JSON.parse(localStorage.getItem('myNotes')) || [];
+        let noteData;
+
+        if (editIndex === "") {
+            noteData = {
+                action: 'save',
+                id: Date.now(),
+                category: category,
+                title: title,
+                desc: desc,
+                currentDay: 1,
+                startDate: getTodayDate(),
+                lastCheckedDate: "",
+                journal: "",
+                pinned: false
+            };
+            notes.push(noteData);
+        } else {
+            let index = parseInt(editIndex);
+            notes[index].category = category;
+            notes[index].title = title;
+            notes[index].desc = desc;
+            
+            noteData = {
+                action: 'update',
+                id: notes[index].id,
+                category: category,
+                title: title,
+                desc: desc,
+                currentDay: notes[index].currentDay,
+                lastCheckedDate: notes[index].lastCheckedDate || "",
+                journal: notes[index].journal || ""
+            };
+        }
+
+        localStorage.setItem('myNotes', JSON.stringify(notes));
+        sendDataToSheet(noteData);
+
+        document.getElementById('noteTitle').value = '';
+        document.getElementById('noteDesc').value = '';
+        document.getElementById('editIndex').value = '';
+        
+        switchPage('page1', '🎯 मेरे हैबिट्स');
+    }
+
+    function editNote(index) {
+        let notes = JSON.parse(localStorage.getItem('myNotes')) || [];
+        let note = notes[index];
+
+        document.getElementById('editIndex').value = index;
+        document.getElementById('noteCategory').value = note.category || "धन & करियर (Wealth)";
+        document.getElementById('noteTitle').value = note.title;
+        document.getElementById('noteDesc').value = note.desc;
+        document.getElementById('formHeading').innerText = "✏️ चैलेंज एडिट करें";
+        document.getElementById('saveBtn').innerText = "अपडेट करें";
+
+        switchPage('page2', '✏️ एडिट करें');
+    }
+
+    function deleteNote(index) {
+        showModal('पुष्टि करें ⚠️', 'क्या आप वाकई इस चैलेंज को डिलीट करना चाहते हैं?', true, function() {
+            let notes = JSON.parse(localStorage.getItem('myNotes')) || [];
+            let noteToDelete = notes[index];
+
+            let deleteData = {
+                action: 'delete',
+                id: noteToDelete.id
+            };
+            sendDataToSheet(deleteData);
+
+            notes.splice(index, 1);
+            localStorage.setItem('myNotes', JSON.stringify(notes));
+            loadNotes();
+        });
+    }
+
+    function togglePin(index) {
+        let notes = JSON.parse(localStorage.getItem('myNotes')) || [];
+        notes[index].pinned = !notes[index].pinned;
+        localStorage.setItem('myNotes', JSON.stringify(notes));
+        loadNotes();
+    }
+
+    function shareOnWhatsApp(title, currentDay) {
+        let text = `🎯 मैंने 21-दिन एफरमेशन चैलेंज में प्रगति की है!\n📌 संकल्प: ${title}\n⏳ वर्तमान स्थिति: Day ${currentDay} / 21\n✨ आप भी अपनी आदतें सुधारें!`;
+        let whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+        window.open(whatsappUrl, '_blank');
+    }
+
+    function renderWeeklyGraph(notes) {
+        let graphDiv = document.getElementById('weeklyGraph');
+        graphDiv.innerHTML = '';
+        
+        let daysOfWeek = ['रवि', 'सोम', 'मंगल', 'बुध', 'गुरु', 'शुक्र', 'शनि'];
+        let todayObj = new Date();
+        
+        for (let i = 6; i >= 0; i--) {
+            let d = new Date();
+            d.setDate(todayObj.getDate() - i);
+            let dayName = daysOfWeek[d.getDay()];
+            let dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+            let count = notes.filter(n => n.lastCheckedDate === dateStr).length;
+            let barHeight = Math.min(count * 15, 40);
+
+            let barWrap = document.createElement('div');
+            barWrap.className = 'graph-bar-wrap';
+            barWrap.innerHTML = `
+                <div class="graph-bar" style="height: ${barHeight > 5 ? barHeight : 4}px;" title="${count} चेक-इन"></div>
+                <div class="graph-label">${dayName}</div>
+            `;
+            graphDiv.appendChild(barWrap);
+        }
+    }
+
+    function loadNotes() {
+        setDailyQuote();
+        let notes = JSON.parse(localStorage.getItem('myNotes')) || [];
+        let notesListDiv = document.getElementById('notesList');
+        notesListDiv.innerHTML = '';
+
+        let total = notes.length;
+        let completed = notes.filter(n => n.currentDay >= 21).length;
+        let active = total - completed;
+        let totalStreak = notes.reduce((acc, curr) => acc + (curr.currentDay > 1 ? curr.currentDay - 1 : 0), 0);
+        let totalCheckins = notes.filter(n => n.lastCheckedDate !== "").length;
+
+        document.getElementById('totalCount').innerText = total;
+        document.getElementById('activeCount').innerText = active;
+        document.getElementById('completedCount').innerText = completed;
+        document.getElementById('streakCount').innerText = totalStreak + ' दिन 🔥';
+
+        updateBadges(totalStreak, completed, totalCheckins);
+        renderWeeklyGraph(notes);
+
+        notes.sort((a, b) => (b.pinned === true) - (a.pinned === true));
+
+        let searchQuery = document.getElementById('searchInput').value.toLowerCase();
+        let filteredNotes = notes.filter(n => n.title.toLowerCase().includes(searchQuery) || (n.desc && n.desc.toLowerCase().includes(searchQuery)));
+
+        if(filteredNotes.length === 0) {
+            notesListDiv.innerHTML = '<div class="empty-msg">💡 कोई परिणाम नहीं मिला।</div>';
+            return;
+        }
+
+        let today = getTodayDate();
+
+        filteredNotes.forEach((note) => {
+            let index = notes.findIndex(n => n.id === note.id);
+
+            if (note.lastCheckedDate && note.lastCheckedDate !== today) {
+                let lastDate = new Date(note.lastCheckedDate);
+                let currentDate = new Date(today);
+                let diffDays = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
+
+                if (diffDays > 1) {
+                    note.currentDay = 1;
+                    note.startDate = today;
+                    note.lastCheckedDate = "";
+                    note.journal = "";
+                }
+            }
+
+            let alreadyCheckedToday = (note.lastCheckedDate === today);
+            let progressPercent = Math.min(Math.round((note.currentDay / 21) * 100), 100);
+
+            let card = document.createElement('div');
+            card.className = `card ${note.pinned ? 'pinned' : ''}`;
+            card.innerHTML = `
+                <div class="card-top-icons">
+                    <button class="icon-btn pin ${note.pinned ? 'pinned' : ''}" onclick="togglePin(${index})" title="पिन करें">📌</button>
+                    <button class="icon-btn" onclick="editNote(${index})" title="एडिट करें">✏️</button>
+                    <button class="icon-btn delete" onclick="deleteNote(${index})" title="डिलीट करें">🗑️</button>
+                </div>
+
+                <span class="category-tag">${note.category || '✨ संकल्प'}</span>
+                <h3>📌 ${note.title}</h3>
+                ${note.desc ? `<p>${note.desc}</p>` : ''}
+                ${note.journal ? `<div class="journal-box">📝 आज का विचार: ${note.journal}</div>` : ''}
+                
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
+                </div>
+
+                <div class="card-bottom-row">
+                    <div>
+                        <span class="progress-badge">⏳ Day ${note.currentDay} / 21 (${progressPercent}%)</span>
+                        <div class="start-date">📅 शुरुआत: ${note.startDate}</div>
+                    </div>
+                    <div class="action-btn-group">
+                        <button class="check-btn ${alreadyCheckedToday ? 'checked' : ''}" onclick="promptCheckIn(${index}, ${alreadyCheckedToday})">
+                            ${alreadyCheckedToday ? '✔️ हो गया' : '✅ चेक-इन'}
+                        </button>
+                        <button class="share-btn" onclick="shareOnWhatsApp('${note.title}', ${note.currentDay})" title="WhatsApp पर शेयर करें">📤</button>
+                    </div>
+                </div>
+            `;
+            notesListDiv.appendChild(card);
+        });
+
+        localStorage.setItem('myNotes', JSON.stringify(notes));
+    }
+
+    function promptCheckIn(index, alreadyCheckedToday) {
+        if(alreadyCheckedToday) {
+            showModal('सूचना ℹ️', 'आप आज इस चैलेंज के लिए पहले ही चेक-इन कर चुके हैं!');
+            return;
+        }
+
+        let extraHtml = `
+            <div style="margin-top: 10px; text-align: left;">
+                <label style="font-size: 13px; font-weight: bold; color: var(--text-muted);">आज का अनुभव या विचार (Optional):</label>
+                <input type="text" id="journalInput" placeholder="जैसे: आज बहुत एनर्जेटिक महसूस हुआ..." style="margin-top: 5px;">
+            </div>
+        `;
+
+        showModal('✅ चेक-इन पुष्टि', 'अपने संकल्प को पूरा करने पर बधाई! क्या आप आज का कोई छोटा विचार जोड़ना चाहते हैं?', false, null, extraHtml);
+        
+        document.getElementById('modalBtnContainer').innerHTML = `
+            <div class="modal-btn-group">
+                <button class="modal-btn cancel" onclick="closeModal()">रद्द करें</button>
+                <button class="modal-btn" onclick="executeCheckIn(${index})">सबमिट करें</button>
+            </div>
+        `;
+    }
+
+    function executeCheckIn(index) {
+        let journalText = document.getElementById('journalInput') ? document.getElementById('journalInput').value.trim() : "";
+        closeModal();
+        playSuccessSound();
+
+        let notes = JSON.parse(localStorage.getItem('myNotes')) || [];
+        let today = getTodayDate();
+
+        if(notes[index].currentDay < 21) {
+            notes[index].currentDay += 1;
+            notes[index].lastCheckedDate = today;
+            notes[index].journal = journalText;
+            
+            if(notes[index].currentDay === 21) {
+                confetti({
+                    particleCount: 150,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+                showModal('शानदार! 🏆🎉', 'बधाई हो! आपने सफलतापूर्वक 21 दिन का यह चैलेंज पूरा कर लिया है!');
+            } else {
+                showModal('बधाई हो! 🎉', 'आपका अगला दिन (Day ' + notes[index].currentDay + ') सफलतापूर्वक अपडेट हो गया है।');
+            }
+        } else {
+            showModal('शानदार! 🏆', 'आप पहले ही यह 21 दिन का चैलेंज पूरा कर चुके हैं!');
+        }
+
+        localStorage.setItem('myNotes', JSON.stringify(notes));
+
+        let updateData = {
+            action: 'update',
+            id: notes[index].id,
+            category: notes[index].category || "",
+            title: notes[index].title,
+            desc: notes[index].desc,
+            currentDay: notes[index].currentDay,
+            lastCheckedDate: notes[index].lastCheckedDate
+        };
+        sendDataToSheet(updateData);
+
+        loadNotes();
+    }
+
+    window.onload = function() {
+        loadNotes();
+        fetchNotesFromSheet();
+        checkDailyReminder();
+    };
+</script>
+
+</body>
+</html>
