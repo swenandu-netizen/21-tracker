@@ -1,0 +1,15 @@
+{
+  "name": "21-दिन हैबिट ट्रैकर",
+  "short_name": "हैबिट ट्रैकर",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f0f2f5",
+  "theme_color": "#667eea",
+  "icons": [
+    {
+      "src": "https://emojicdn.elk.sh/🎯?style=apple",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
